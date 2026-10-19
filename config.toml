@@ -117,6 +117,17 @@ enabled = true
 ADB_PATH = "${HOME}/Library/Android/sdk/platform-tools/adb"
 PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${HOME}/Library/Android/sdk/platform-tools"
 
+[mcp_servers.reqable]
+command = "/opt/homebrew/bin/npx"
+args = [
+    "-y",
+    "reqable-mcp-server",
+]
+enabled = true
+
+[mcp_servers.reqable.env]
+PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
 [plugins]
 enabled = ["testkit"]
 
