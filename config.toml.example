@@ -1,0 +1,19 @@
+# Grok Build Configuration Example (~/.grok/config.toml)
+
+[cli]
+installer = "internal"
+
+[ui]
+max_thoughts_width = 120
+theme = "tokyonight"
+show_timeline = true
+
+# High performance custom statusline
+[ui.status_line]
+type = "command"
+command = "~/.grok/statusline.sh"
+# refresh_interval = 300 # seconds (optional, triggers periodic refresh while idle)
+
+[models]
+default = "grok-4.7"
+default_reasoning_effort = "medium"
