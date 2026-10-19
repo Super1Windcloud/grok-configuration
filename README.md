@@ -1,5 +1,7 @@
 # Grok Build Configuration & Statusline
 
+安装与同步仅操作 `~/.grok/`，不读写其他 agent 或 `~/.agents/` 的配置。`--only` 仅接受本仓库所属 agent，跨 agent 参数会在执行前报错；`--repo` 不会扩大范围。
+
 专为 **Grok Build**（Grok CLI 1.0.60+ / 1.0.62+）深度定制的高性能异步非阻塞状态栏与全栈工程配置。深度融合 **Codex**、**Claude Code** 与 **Antigravity CLI** 的最佳实践、自动化权限策略与物理级性能调优，并接入统一的 Multi-Harness 一键安装与配置同步体系。
 
 ---
@@ -101,6 +103,7 @@ python3 -m unittest discover -s /path/to/grok-configuration/tests -v
 ```
 
 测试覆盖范围包括：
+- **安装隔离测试**：真实 shell 入口验证其他 agent 与共享配置保持原样、跨 agent 参数拒绝、同步仅读取自身配置、预览无写入；本轮完整 Python 套件 30 项通过。
 - **Harness 测试**：配置导出凭据脱敏、软链接安全隔离、插件受控安装、备份保护与独立 layout 导出；
 - **Statusline 测试**：Token 格式化（`500`, `1.5k`, `24k`, `1.2M`）、用量推算、色阶阶梯响应（`<75%`, `75%~89%`, `≥90%`）、时序感知（`running:8s` / `took:14s`）、`smart_cwd` 多级折叠、CJK 双宽字符真实排版与端到端 Mock JSON 运行。
 

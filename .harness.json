@@ -3,7 +3,6 @@
     "grok": "."
   },
   "selected": [
-    "grok",
-    "shared"
+    "grok"
   ]
 }
