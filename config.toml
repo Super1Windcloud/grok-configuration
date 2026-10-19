@@ -1,0 +1,51 @@
+[cli]
+installer = "internal"
+
+[marketplace]
+default_skills_installs_purged = true
+official_marketplace_auto_installed = true
+
+[[marketplace.sources]]
+name = "xAI Official"
+git = "https://github.com/xai-org/plugin-marketplace.git"
+
+[ui]
+max_thoughts_width = 120
+fork_secondary_model = "grok-4.6"
+yolo = false
+compact_mode = true
+permission_mode = "ask"
+theme = "tokyonight"
+show_timeline = true
+tool_call_density = "detailed"
+
+[ui.status_line]
+type = "command"
+command = "~/.grok/statusline.sh"
+
+[models]
+default = "grok-4.7"
+default_reasoning_effort = "medium"
+
+[model.aigo-grok]
+model = "grok-4.6"
+name = "Aigo Grok"
+base_url = "https://aigo.hair/v1"
+api_key = "${AIGO_API_KEY}"
+api_backend = "chat_completions"
+
+[mcp_servers.mobile-mcp]
+command = "/opt/homebrew/bin/npx"
+args = [
+    "-y",
+    "@mobilenext/mobile-mcp@latest",
+]
+enabled = true
+
+[mcp_servers.mobile-mcp.env]
+ANDROID_SDK_ROOT = "${HOME}/Library/Android/sdk"
+ANDROID_HOME = "${HOME}/Library/Android/sdk"
+PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${HOME}/Library/Android/sdk/platform-tools"
+
+[plugins]
+enabled = ["testkit"]
