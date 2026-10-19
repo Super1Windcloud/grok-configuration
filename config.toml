@@ -10,14 +10,17 @@ name = "xAI Official"
 git = "https://github.com/xai-org/plugin-marketplace.git"
 
 [ui]
+theme = "tokyonight"
+permission_mode = "always-approve"
+show_timeline = true
+timestamps = "on"
+tool_call_density = "detailed"
 max_thoughts_width = 120
 fork_secondary_model = "grok-4.6"
-yolo = false
-compact_mode = true
-permission_mode = "ask"
-theme = "tokyonight"
-show_timeline = true
-tool_call_density = "detailed"
+combine_queued_prompts = true
+compact_mode = false
+cursor_blink = false
+confirm_before_rewind = true
 
 [ui.status_line]
 type = "command"
@@ -34,6 +37,66 @@ base_url = "https://aigo.hair/v1"
 api_key = "${AIGO_API_KEY}"
 api_backend = "chat_completions"
 
+[permission]
+deny = [
+    "Read(~/.ssh/**)",
+    "Edit(~/.ssh/**)",
+    "Read(~/.aws/**)",
+    "Edit(~/.aws/**)",
+    "Read(~/.gnupg/**)",
+    "Edit(~/.gnupg/**)",
+    "Read(**/*.pem)",
+    "Edit(**/*.pem)",
+    "Read(**/*.keystore)",
+    "Edit(**/*.keystore)",
+    "Read(**/*.jks)",
+    "Edit(**/*.jks)",
+    "Read(**/*.p12)",
+    "Edit(**/*.p12)",
+    "Read(**/.env.production)",
+    "Edit(**/.env.production)",
+    "Edit(~/.zshrc)",
+    "Edit(~/.zshenv)",
+]
+
+[sandbox]
+profile = "workspace"
+auto_allow_bash = true
+
+[subagents]
+enabled = true
+max_concurrent = 4
+limit_behavior = "queue"
+
+[memory]
+enabled = true
+
+[memory_v2]
+enabled = true
+batch_dream_enabled = true
+
+[goal]
+enabled = true
+
+[doom_loop_recovery]
+enabled = true
+
+[compat.claude]
+agents = true
+hooks = true
+mcps = true
+rules = true
+skills = true
+
+[compat.cursor]
+rules = true
+skills = true
+mcps = true
+
+[compat.codex]
+skills = true
+hooks = true
+
 [mcp_servers.mobile-mcp]
 command = "/opt/homebrew/bin/npx"
 args = [
@@ -45,6 +108,14 @@ enabled = true
 [mcp_servers.mobile-mcp.env]
 ANDROID_SDK_ROOT = "${HOME}/Library/Android/sdk"
 ANDROID_HOME = "${HOME}/Library/Android/sdk"
+PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${HOME}/Library/Android/sdk/platform-tools"
+
+[mcp_servers.scrcpy]
+command = "/opt/homebrew/bin/scrcpy-mcp"
+enabled = true
+
+[mcp_servers.scrcpy.env]
+ADB_PATH = "${HOME}/Library/Android/sdk/platform-tools/adb"
 PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${HOME}/Library/Android/sdk/platform-tools"
 
 [plugins]
