@@ -1,0 +1,9 @@
+{
+  "roots": {
+    "grok": "."
+  },
+  "selected": [
+    "grok",
+    "shared"
+  ]
+}

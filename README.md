@@ -1,5 +1,6 @@
-# Grok Configuration & Statusline
-专为 **Grok Build**（Grok CLI 1.0.60+ / 1.0.62+）深度定制的高性能异步非阻塞状态栏，深度融合并延续 **Antigravity CLI** 状态栏的设计哲学与物理级性能调优。
+# Grok Build Configuration & Statusline
+
+专为 **Grok Build**（Grok CLI 1.0.60+ / 1.0.62+）深度定制的高性能异步非阻塞状态栏与全栈工程配置。深度融合 **Codex**、**Claude Code** 与 **Antigravity CLI** 的最佳实践、自动化权限策略与物理级性能调优，并接入统一的 Multi-Harness 一键安装与配置同步体系。
 
 ---
 
@@ -25,6 +26,10 @@
 - 📐 **智能路径收敛与弹性对齐**：
   - `smart_cwd`：Git 仓库内自动锚定 `仓库名/.../子目录`，非 Git 路径自动折叠 `$HOME` 为 `~`；
   - 两端弹性对齐：左侧显示状态指标，右侧显示项目路径，根据终端列宽（`COLUMNS` / 终端 TTY）自动计算弹性间隙，窄屏优雅降级。
+- 🛡️ **标准 Harness 架构统一纳管**：
+  - 原生接入 `scripts/harness.py` 跨端配置框架，与 `codex-configuration`、`fullstack-claude-code-configuration`、`antigravity-statusline-configuration` 保持 100% 一致的 `install.sh` 与 `sync.sh` 调用契约；
+  - 自动备份老配置至 `~/.harness-backups/`，安全保护本地秘钥凭据；
+  - 自动化受控插件恢复：支持 Testkit 插件的无感安装与 `--trust` 授权。
 
 ---
 
@@ -32,7 +37,7 @@
 
 ### 1. 活跃生成轮次中（Active Turn）
 ```text
-git:main* Grok 4.7 (high) ctx:18% (36k/200k) running:8s $0.01              super/grok-statusline-configuration
+git:main* Grok 4.7 (high) ctx:18% (36k/200k) running:8s $0.01              super/grok-configuration
 ```
 
 ### 2. 交互就绪状态（Completed Turn with Session Name）
@@ -47,16 +52,28 @@ git:main [merge]* Grok 4.6 ctx:92% (184k/200k) took:45s $0.12                   
 
 ---
 
-## 🚀 快速安装与部署
+## 🚀 快速安装与配置同步
+
+与体系内其他 Harness 工具保持完全统一的操作接口：
 
 ### 一键安装
 ```bash
-/Users/super/super/grok-statusline-configuration/install.sh
+/path/to/grok-configuration/install.sh
 ```
 
 ### 预览安装（Dry-run）
 ```bash
-/Users/super/super/grok-statusline-configuration/install.sh --dry-run
+/path/to/grok-configuration/install.sh --dry-run
+```
+
+### 离线部署（跳过网络插件下载）
+```bash
+/path/to/grok-configuration/install.sh --offline
+```
+
+### 配置同步（从本机 ~/.grok 同步回仓库并自动脱敏凭据）
+```bash
+/path/to/grok-configuration/sync.sh
 ```
 
 ---
@@ -78,21 +95,14 @@ command = "~/.grok/statusline.sh"
 
 ## 🧪 自动化测试验证
 
-运行单元测试套件：
+运行完整自动化测试套件：
 ```bash
-python3 /Users/super/super/grok-statusline-configuration/tests/test_statusline.py
+python3 -m unittest discover -s /path/to/grok-configuration/tests -v
 ```
 
 测试覆盖范围包括：
-- Token 数量单位格式化（`500`, `1.5k`, `24k`, `1.2M`）；
-- 上下文用量计算（直接百分比、剩余反推、Token 比例推算）；
-- 警戒色阶阶梯响应（`<75%`, `75%~89%`, `≥90%`）；
-- 耗时格式化与运行中/完成态时序识别；
-- 成本边界格式化；
-- `smart_cwd` 多级路径折叠；
-- CJK 双宽字符与 ANSI 转义序列真实宽度对齐；
-- 弹性左右对齐与窄屏降级；
-- Mock JSON 真实命令行端到端执行流。
+- **Harness 测试**：配置导出凭据脱敏、软链接安全隔离、插件受控安装、备份保护与独立 layout 导出；
+- **Statusline 测试**：Token 格式化（`500`, `1.5k`, `24k`, `1.2M`）、用量推算、色阶阶梯响应（`<75%`, `75%~89%`, `≥90%`）、时序感知（`running:8s` / `took:14s`）、`smart_cwd` 多级折叠、CJK 双宽字符真实排版与端到端 Mock JSON 运行。
 
 ---
 
@@ -101,12 +111,18 @@ python3 /Users/super/super/grok-statusline-configuration/tests/test_statusline.p
 ```text
 .
 ├── .gitignore                      # 忽略缓存与编译临时文件
+├── .harness.json                   # Harness 拓扑布局声明
+├── LICENSE                         # MIT 开源许可证
 ├── README.md                       # 说明与技术文档
+├── config.toml                     # Grok Build 生产环境脱敏配置
 ├── config.toml.example             # Grok Build 推荐配置参考
-├── install.sh                      # 一键部署与无缝安装脚本
+├── install.sh                      # 一键部署与无缝安装入口
+├── plugins.json                    # 声明受控插件与技能源（Testkit）
+├── scripts/
+│   └── harness.py                  # 跨端通用配置与插件管理引擎
 ├── statusline.sh                   # 状态栏核心脚本（Python 3 实现，~28ms）
-├── sync.sh                         # 双向同步脚本
+├── sync.sh                         # 双向安全同步入口
 └── tests/
-    └── test_statusline.py          # 完整自动化测试套件
+    ├── test_harness.py             # Harness 部署与安全测试套件
+    └── test_statusline.py          # 状态栏核心逻辑测试套件
 ```
->>>>>>> 69e8dc6 (feat(statusline): 引入 Grok Build 高性能异步状态栏与配置管理)

@@ -34,7 +34,6 @@ default_reasoning_effort = "medium"
 model = "grok-4.6"
 name = "Aigo Grok"
 base_url = "https://aigo.hair/v1"
-api_key = "${AIGO_API_KEY}"
 api_backend = "chat_completions"
 
 [permission]
@@ -120,3 +119,5 @@ PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${HOME}/L
 
 [plugins]
 enabled = ["testkit"]
+
+
