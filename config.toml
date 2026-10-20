@@ -123,4 +123,11 @@ PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 [plugins]
 enabled = ["testkit"]
 
-
+[mcp_servers."mitmproxy-mcp"]
+command = "uvx"
+args = ["--directory", "~/.grok/runtime/mitmproxy", "--no-config", "--python", "3.13", "--with", "mcp<2", "--from", "mitmproxy-mcp==0.6.1", "mitmproxy-mcp"]
+enabled = true
+startup_timeout_sec = 120
+[mcp_servers."mitmproxy-mcp".env]
+UV_CACHE_DIR = "~/.grok/runtime/mitmproxy/uv-cache"
+UV_TOOL_DIR = "~/.grok/runtime/mitmproxy/uv-tools"

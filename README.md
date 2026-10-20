@@ -129,3 +129,21 @@ python3 -m unittest discover -s /path/to/grok-configuration/tests -v
     ├── test_harness.py             # Harness 部署与安全测试套件
     └── test_statusline.py          # 状态栏核心逻辑测试套件
 ```
+
+
+## mitmproxy MCP
+
+默认安装会增量接入 [snapspecter/mitmproxy-mcp](https://github.com/snapspecter/mitmproxy-mcp)。需要已安装 `uv`（提供 `uvx`）；使用 Python 3.13、固定 PyPI 版本 `0.6.1`，额外约束 `mcp<2`，避免该版本误装不兼容的 MCP SDK 2.x。首次运行由 uv 准备 Python 和依赖，后续复用 uv 缓存。
+
+仅接入此 MCP（不重装其他工具或插件）：
+
+```sh
+python3 ~/super/grok-configuration/scripts/mitmproxy_setup.py --dry-run
+python3 ~/super/grok-configuration/scripts/mitmproxy_setup.py
+```
+
+脚本仅修改本仓库所属客户端的一条 MCP 配置；覆盖前保存到 `~/.harness-backups/mitmproxy-*`，保留其他 MCP、凭据与项目设置，拒绝向软链接目标写入。`--offline` 只写配置、不下载或验证依赖；`--dry-run` 不写入、不下载。完整安装的 `--dependencies none` 跳过此步骤。
+
+抓包数据库位于 `~/.local/share/harness-mitmproxy/<agent>/`（私有目录），不写入工作项目或 GitHub。启动 MCP 不会自动启动代理；需要抓包时调用 `set_scope`、`start_proxy`（默认 `127.0.0.1:8080`），完成后调用 `stop_proxy`。多个 agent 同时抓包应使用不同端口；应用代理、HTTPS 证书信任按目标设备配置。本次接入不更改系统代理或证书信任。客户端重启或新会话后加载新 MCP。
+
+Grok 的 workspace 沙箱限制向 `~/.grok/` 之外写入，因此 Grok 专用运行目录与 uv 缓存位于 `~/.grok/runtime/mitmproxy/`，通过 MCP 子进程的 `UV_CACHE_DIR` 配置，不放宽沙箱。
