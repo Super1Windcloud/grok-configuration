@@ -413,14 +413,11 @@ def main():
 
     model = text(pick(data, "model.display_name", "model.id"))
     effort = text(pick(data, "effort.level"))
-    session_name = text(pick(data, "session_name"))
 
     left_parts = []
     branch, git_root = git_info(cwd, data)
     if branch:
         left_parts.append(ansi("1;35", f"git:{branch}"))
-    if session_name:
-        left_parts.append(ansi("1;33", session_name))
     if model:
         m_label = model
         if effort:
