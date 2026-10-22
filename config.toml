@@ -16,7 +16,7 @@ show_timeline = true
 timestamps = "on"
 tool_call_density = "detailed"
 max_thoughts_width = 120
-fork_secondary_model = "grok-4.6"
+fork_secondary_model = "grok-4.7"
 combine_queued_prompts = true
 compact_mode = false
 cursor_blink = false
@@ -25,6 +25,18 @@ confirm_before_rewind = true
 [ui.status_line]
 type = "command"
 command = "~/.grok/statusline.sh"
+
+[ui.notifications]
+method = "auto"
+condition = "unfocused"
+idle_threshold_secs = 3
+events = ["turn_complete", "approval_required"]
+sleep_prevention = true
+progress_bar = true
+
+[ui.notifications.title]
+enabled = true
+items = ["action-required", "spinner", "activity", "session-name", "cwd", "model"]
 
 [models]
 default = "grok-4.7"
@@ -37,6 +49,7 @@ base_url = "https://aigo.hair/v1"
 api_backend = "chat_completions"
 
 [permission]
+ask = ["MCPTool(figma__use_figma)"]
 deny = [
     "Read(~/.ssh/**)",
     "Edit(~/.ssh/**)",
@@ -131,3 +144,4 @@ startup_timeout_sec = 120
 [mcp_servers."mitmproxy-mcp".env]
 UV_CACHE_DIR = "~/.grok/runtime/mitmproxy/uv-cache"
 UV_TOOL_DIR = "~/.grok/runtime/mitmproxy/uv-tools"
+MITMPROXY_PORT = "9000"

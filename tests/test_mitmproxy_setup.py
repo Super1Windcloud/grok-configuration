@@ -52,6 +52,8 @@ class MitmproxySetupTest(unittest.TestCase):
         self.assertIn(mcp.PACKAGE, command)
         self.assertIn('mcp<2', command)
         self.assertIn(str(self.home / ('.grok/runtime/mitmproxy' if OWNER == 'grok' else '.local/share/harness-mitmproxy/' + OWNER)), command)
+        if OWNER == 'grok':
+            self.assertEqual(entry['env']['MITMPROXY_PORT'], '9000')
         backups = list((self.home / '.harness-backups').glob('mitmproxy-*/' + mcp.LOCATIONS[OWNER]))
         self.assertEqual(len(backups), 1)
         self.assertEqual(backups[0].read_text(), self.original)

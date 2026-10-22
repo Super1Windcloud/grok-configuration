@@ -43,6 +43,7 @@ def render(text, owner, command, args):
             cache = str(Path(args[1]) / 'uv-cache')
             result += '[mcp_servers."mitmproxy-mcp".env]\nUV_CACHE_DIR = ' + json.dumps(cache) + '\n'
             result += 'UV_TOOL_DIR = ' + json.dumps(str(Path(args[1]) / 'uv-tools')) + '\n'
+            result += 'MITMPROXY_PORT = "9000"\n'
         tomllib.loads(result)
         return result
     value = json.loads(text) if text else {}
