@@ -26,7 +26,7 @@ FILES = {
     'shared': ['AGENTS.md'],
     'antigravity': ['AGENTS.md', 'settings.json', 'statusline.sh'],
     'antigravity-global': ['GEMINI.md', 'AGENTS.md', 'agents', 'rules', 'workflows'],
-    'grok': ['config.toml', 'statusline.sh'],
+    'grok': ['AGENTS.md', 'config.toml', 'statusline.sh'],
 }
 TESTKIT_SOURCE = {'url': 'https://github.com/winhok/testkit.git',
                   'ref': '0c80ac38944bb70c6a60305c174dbc2a6a9767f2', 'subdir': 'skills'}

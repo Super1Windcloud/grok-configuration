@@ -159,6 +159,7 @@ python3 -m unittest discover -s /path/to/grok-configuration/tests -v
 ├── .harness.json                   # Harness 拓扑布局声明
 ├── LICENSE                         # MIT 开源许可证
 ├── README.md                       # 说明与技术文档
+├── AGENTS.md                       # 用户级根规范，随 sync/install 部署到 ~/.grok/
 ├── config.toml                     # Grok Build 生产环境脱敏配置
 ├── config.toml.example             # Grok Build 推荐配置参考
 ├── install.sh                      # 一键部署与无缝安装入口

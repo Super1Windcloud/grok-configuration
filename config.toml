@@ -21,6 +21,8 @@ combine_queued_prompts = true
 compact_mode = false
 cursor_blink = false
 confirm_before_rewind = true
+screen_mode = "minimal"
+yolo = false
 
 [ui.status_line]
 type = "command"
@@ -30,17 +32,27 @@ command = "~/.grok/statusline.sh"
 method = "auto"
 condition = "unfocused"
 idle_threshold_secs = 3
-events = ["turn_complete", "approval_required"]
+events = [
+    "turn_complete",
+    "approval_required",
+]
 sleep_prevention = true
 progress_bar = true
 
 [ui.notifications.title]
 enabled = true
-items = ["action-required", "spinner", "activity", "session-name", "cwd", "model"]
+items = [
+    "action-required",
+    "spinner",
+    "activity",
+    "session-name",
+    "cwd",
+    "model",
+]
 
 [models]
-default = "grok-4.7"
-default_reasoning_effort = "medium"
+default = "grok-4.7-build-fast"
+default_reasoning_effort = "high"
 
 [model.aigo-grok]
 model = "grok-4.6"
@@ -72,7 +84,7 @@ deny = [
 ]
 
 [sandbox]
-profile = "workspace"
+profile = "off"
 auto_allow_bash = true
 
 [subagents]
@@ -133,15 +145,27 @@ enabled = true
 [mcp_servers.reqable.env]
 PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
-[plugins]
-enabled = ["testkit"]
-
-[mcp_servers."mitmproxy-mcp"]
+[mcp_servers.mitmproxy-mcp]
 command = "uvx"
-args = ["--directory", "~/.grok/runtime/mitmproxy", "--no-config", "--python", "3.13", "--with", "mcp<2", "--from", "mitmproxy-mcp==0.6.1", "mitmproxy-mcp"]
+args = [
+    "--directory",
+    "~/.grok/runtime/mitmproxy",
+    "--no-config",
+    "--python",
+    "3.13",
+    "--with",
+    "mcp<2",
+    "--from",
+    "mitmproxy-mcp==0.6.1",
+    "mitmproxy-mcp",
+]
 enabled = true
 startup_timeout_sec = 120
-[mcp_servers."mitmproxy-mcp".env]
+
+[mcp_servers.mitmproxy-mcp.env]
 UV_CACHE_DIR = "~/.grok/runtime/mitmproxy/uv-cache"
 UV_TOOL_DIR = "~/.grok/runtime/mitmproxy/uv-tools"
 MITMPROXY_PORT = "9000"
+
+[plugins]
+enabled = ["testkit"]
