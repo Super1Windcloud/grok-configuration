@@ -27,6 +27,7 @@ yolo = false
 [ui.status_line]
 type = "command"
 command = "~/.grok/statusline.sh"
+refresh_interval = 300
 
 [ui.notifications]
 method = "auto"

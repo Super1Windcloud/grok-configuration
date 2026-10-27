@@ -286,6 +286,133 @@ def cost_info(data):
     return ""
 
 
+WEEK_CACHE = os.path.join(HOME, ".grok", "statusline-week.json")
+WEEK_TTL = 120
+BILLING_URL = "https://cli-chat-proxy.grok.com/v1/billing?format=credits"
+
+
+def format_week(pct):
+    if pct is None:
+        return ""
+    try:
+        shown = int(round(float(pct)))
+    except (TypeError, ValueError):
+        return ""
+    if shown < 0:
+        return ""
+    if shown > 999:
+        shown = 999
+    return f"week:{shown}%"
+
+
+def week_percent_from_body(body):
+    if not isinstance(body, dict):
+        return None
+    nested = body.get("config")
+    if isinstance(nested, dict):
+        body = nested
+    products = body.get("productUsage")
+    if isinstance(products, list):
+        for item in products:
+            if isinstance(item, dict) and item.get("product") == "GrokBuild":
+                pct = token_number(item.get("usagePercent"))
+                if pct is not None:
+                    return pct
+    return token_number(body.get("creditUsagePercent"))
+
+
+def read_week_cache():
+    try:
+        with open(WEEK_CACHE, "r", encoding="utf-8") as handle:
+            cached = json.load(handle)
+        pct = token_number(cached.get("percent"))
+        ts = token_number(cached.get("ts"))
+        if pct is None or ts is None:
+            return None, None
+        return pct, ts
+    except Exception:
+        return None, None
+
+
+def write_week_cache(pct):
+    try:
+        os.makedirs(os.path.dirname(WEEK_CACHE), exist_ok=True)
+        tmp = WEEK_CACHE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as handle:
+            json.dump({"ts": time.time(), "percent": pct}, handle)
+        os.replace(tmp, WEEK_CACHE)
+    except Exception:
+        pass
+
+
+def auth_token():
+    path = os.path.join(HOME, ".grok", "auth.json")
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except Exception:
+        return ""
+    best = ""
+    best_exp = ""
+    if isinstance(data, dict):
+        for entry in data.values():
+            if not isinstance(entry, dict):
+                continue
+            key = entry.get("key") or ""
+            exp = str(entry.get("expires_at") or "")
+            if key and exp >= best_exp:
+                best = key
+                best_exp = exp
+    return best
+
+
+def client_version():
+    path = os.path.join(HOME, ".grok", "version.json")
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            ver = json.load(handle).get("version")
+        if isinstance(ver, str) and ver.strip():
+            return ver.strip()
+    except Exception:
+        pass
+    return "1.0.67"
+
+
+def fetch_week_percent():
+    token = auth_token()
+    if not token:
+        return None
+    import urllib.request
+
+    req = urllib.request.Request(
+        BILLING_URL,
+        headers={
+            "Authorization": "Bearer " + token,
+            "x-grok-client-version": client_version(),
+            "x-grok-client-identifier": "grok-shell",
+            "Accept": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=2.0) as resp:
+            body = json.loads(resp.read().decode("utf-8", "replace"))
+    except Exception:
+        return None
+    return week_percent_from_body(body)
+
+
+def week_quota(data):
+    trigger = text(pick(data or {}, "trigger"))
+    pct, ts = read_week_cache()
+    fresh = ts is not None and (time.time() - ts) < WEEK_TTL
+    if trigger == "refresh_interval" or not fresh:
+        fetched = fetch_week_percent()
+        if fetched is not None:
+            pct = fetched
+            write_week_cache(pct)
+    return format_week(pct)
+
+
 def smart_cwd(cwd, git_root=None):
     if not cwd:
         return ""
@@ -430,6 +557,10 @@ def main():
         if ctx_tok:
             ctx_label += f" ({ctx_tok})"
         left_parts.append(ansi(ctx_color(ctx_pct), ctx_label))
+
+    week = week_quota(data)
+    if week:
+        left_parts.append(ansi(ctx_color(week.split(":")[-1].rstrip("%")), week))
 
     duration = duration_info(data)
     if duration:

@@ -68,6 +68,28 @@ class TestGrokStatusline(unittest.TestCase):
         completed_data = {"cost": {"total_duration_ms": 15000}}
         self.assertEqual(statusline.duration_info(completed_data), "took:15s")
 
+    def test_week_quota_formatting(self):
+        self.assertEqual(statusline.format_week(None), "")
+        self.assertEqual(statusline.format_week(0), "week:0%")
+        self.assertEqual(statusline.format_week(42.4), "week:42%")
+        self.assertEqual(statusline.format_week(42.6), "week:43%")
+        self.assertEqual(statusline.format_week(-1), "")
+        body = {
+            "config": {
+                "creditUsagePercent": 10,
+                "productUsage": [{"product": "GrokBuild", "usagePercent": 43}],
+            }
+        }
+        self.assertEqual(statusline.week_percent_from_body(body), 43)
+        self.assertEqual(statusline.week_percent_from_body({"creditUsagePercent": 7}), 7)
+        self.assertEqual(
+            statusline.week_percent_from_body({"config": {"creditUsagePercent": 7}}),
+            7,
+        )
+        self.assertIsNone(statusline.week_percent_from_body({}))
+        self.assertEqual(statusline.ctx_color("43"), "2")
+        self.assertEqual(statusline.ctx_color("90"), "1;31")
+
     def test_cost_info(self):
         self.assertEqual(statusline.cost_info({"cost": {"total_cost_usd": 0.035}}), "$0.04")
         self.assertEqual(statusline.cost_info({"cost": {"total_cost_usd": 0.005}}), "$0.005")
