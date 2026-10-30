@@ -18,6 +18,19 @@ spec.loader.exec_module(statusline)
 
 
 class TestGrokStatusline(unittest.TestCase):
+    def setUp(self):
+        cache = tempfile.NamedTemporaryFile(delete=False)
+        cache.close()
+        self._cache_path = cache.name
+        os.environ["GROK_STATUSLINE_TURN_CACHE"] = self._cache_path
+
+    def tearDown(self):
+        os.environ.pop("GROK_STATUSLINE_TURN_CACHE", None)
+        try:
+            os.unlink(self._cache_path)
+        except OSError:
+            pass
+
     def test_token_formatting(self):
         self.assertEqual(statusline.format_tokens(500), "500")
         self.assertEqual(statusline.format_tokens(1500), "1.5k")
@@ -60,13 +73,62 @@ class TestGrokStatusline(unittest.TestCase):
 
     def test_duration_info(self):
         now_ms = time.time() * 1000
-        # Running turn
-        running_data = {"turn": {"started_at_ms": now_ms - 5200}}
+        running_data = {"session_id": "s", "prompt_id": "p", "turn": {"started_at_ms": now_ms - 5200}}
         self.assertTrue(statusline.duration_info(running_data).startswith("running:"))
 
-        # Completed turn
-        completed_data = {"cost": {"total_duration_ms": 15000}}
-        self.assertEqual(statusline.duration_info(completed_data), "took:15s")
+        # Session age is not a prompt duration. Without a finished turn there is no took.
+        completed_data = {"session_id": "fresh", "cost": {"total_duration_ms": 15000}}
+        self.assertEqual(statusline.duration_info(completed_data), "")
+
+    def test_took_restarts_each_prompt(self):
+        session = "sess-1"
+        t0 = 1_700_000_000_000
+        prompt_a = {
+            "session_id": session,
+            "prompt_id": "prompt-a",
+            "turn": {"started_at_ms": t0},
+            "cost": {"total_duration_ms": 400000},
+        }
+        self.assertEqual(statusline.duration_info(prompt_a, now_ms=t0 + 1000), "running:1s")
+        self.assertEqual(statusline.duration_info(prompt_a, now_ms=t0 + 5000), "running:5s")
+
+        idle = {"session_id": session, "cost": {"total_duration_ms": 900000}}
+        self.assertEqual(statusline.duration_info(idle, now_ms=t0 + 5200), "took:5s")
+        # Later refreshes keep the frozen prompt time. Session age must not keep climbing.
+        self.assertEqual(statusline.duration_info(idle, now_ms=t0 + 80000), "took:5s")
+
+        t1 = t0 + 90000
+        prompt_b = {
+            "session_id": session,
+            "prompt_id": "prompt-b",
+            "turn": {"started_at_ms": t1},
+            "cost": {"total_duration_ms": 990000},
+        }
+        self.assertEqual(statusline.duration_info(prompt_b, now_ms=t1 + 2000), "running:2s")
+        self.assertEqual(statusline.duration_info(idle, now_ms=t1 + 9000), "took:9s")
+        self.assertEqual(statusline.duration_info({"session_id": "other"}, now_ms=t1 + 9000), "")
+
+    def test_took_restarts_when_started_at_stays_put(self):
+        session = "sess-sticky"
+        t0 = 1_700_000_000_000
+        first = {
+            "session_id": session,
+            "prompt_id": "prompt-a",
+            "turn": {"started_at_ms": t0},
+        }
+        self.assertEqual(statusline.duration_info(first, now_ms=t0 + 4000), "running:4s")
+        idle = {"session_id": session}
+        self.assertEqual(statusline.duration_info(idle, now_ms=t0 + 4000), "took:4s")
+
+        second = {
+            "session_id": session,
+            "prompt_id": "prompt-b",
+            "turn": {"started_at_ms": t0},
+        }
+        seen = t0 + 20000
+        self.assertEqual(statusline.duration_info(second, now_ms=seen), "running:0s")
+        self.assertEqual(statusline.duration_info(second, now_ms=seen + 3000), "running:3s")
+        self.assertEqual(statusline.duration_info(idle, now_ms=seen + 3000), "took:3s")
 
     def test_week_quota_formatting(self):
         self.assertEqual(statusline.format_week(None), "")
@@ -143,7 +205,12 @@ class TestGrokStatusline(unittest.TestCase):
             input=payload.encode("utf-8"),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            env={"COLUMNS": "120"}
+            env={
+                "COLUMNS": "120",
+                "GROK_STATUSLINE_TURN_CACHE": self._cache_path,
+                "PATH": os.environ.get("PATH", ""),
+                "HOME": os.environ.get("HOME", ""),
+            },
         )
         self.assertEqual(p.returncode, 0)
         output = p.stdout.decode("utf-8")

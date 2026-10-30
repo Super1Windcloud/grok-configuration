@@ -1,6 +1,7 @@
 #!/opt/homebrew/bin/python3
 """Grok Build custom statusline - High performance asynchronous statusline."""
 
+import fcntl
 import json
 import os
 import re
@@ -264,17 +265,127 @@ def fmt_duration(seconds):
     return f"{secs}s"
 
 
-def duration_info(data):
-    started_at = pick(data, "turn.started_at_ms")
-    if isinstance(started_at, (int, float)) and started_at > 0:
-        elapsed = max(0.0, (time.time() * 1000.0 - started_at) / 1000.0)
-        return f"running:{fmt_duration(elapsed)}"
+def turn_cache_path():
+    override = os.environ.get("GROK_STATUSLINE_TURN_CACHE")
+    if override:
+        return override
+    return os.path.join(HOME, ".grok", "statusline-turn.json")
 
-    total_ms = pick(data, "cost.total_duration_ms")
-    if isinstance(total_ms, (int, float)) and total_ms >= 1000:
-        return f"took:{fmt_duration(total_ms / 1000.0)}"
 
-    return ""
+def mutate_turn_cache(mutator):
+    """Read-modify-write the per-session turn clock. Returns False if the file could not be locked."""
+    path = turn_cache_path()
+    try:
+        directory = os.path.dirname(path)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+        with open(path, "a+", encoding="utf-8") as handle:
+            try:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            except Exception:
+                pass
+            handle.seek(0)
+            raw = handle.read()
+            try:
+                state = json.loads(raw) if raw.strip() else {"sessions": {}}
+            except Exception:
+                state = {"sessions": {}}
+            if not isinstance(state, dict) or not isinstance(state.get("sessions"), dict):
+                state = {"sessions": {}}
+            dirty = bool(mutator(state))
+            if dirty:
+                sessions = state["sessions"]
+                if len(sessions) > 16:
+                    ranked = sorted(
+                        sessions.items(),
+                        key=lambda item: item[1].get("updated_ms", 0) if isinstance(item[1], dict) else 0,
+                    )
+                    for key, _ in ranked[: len(sessions) - 16]:
+                        sessions.pop(key, None)
+                handle.seek(0)
+                handle.truncate()
+                json.dump(state, handle, separators=(",", ":"))
+                handle.flush()
+        return True
+    except Exception:
+        return False
+
+
+def _duration_from_state(state, data, now_ms):
+    """Per-prompt clock.
+
+    cost.total_duration_ms is session age since this process attached, so it
+    must not drive took. Each new prompt_id (or a new turn.started_at_ms)
+    restarts the clock; the value freezes when the turn leaves the payload.
+    """
+    sessions = state.setdefault("sessions", {})
+    session_id = text(pick(data, "session_id")) or "_"
+    rec = sessions.get(session_id)
+    if not isinstance(rec, dict):
+        rec = {}
+    started_at = token_number(pick(data, "turn.started_at_ms"))
+    prompt_id = text(pick(data, "prompt_id"))
+    dirty = False
+
+    if started_at is not None and started_at > 0:
+        turn_key = prompt_id or f"start:{int(started_at)}"
+        same_turn = rec.get("phase") == "running" and rec.get("turn_key") == turn_key
+        if same_turn:
+            anchor = float(rec.get("anchor_ms") or started_at)
+        else:
+            anchor = float(started_at)
+            prev_key = text(rec.get("turn_key"))
+            prev_payload = token_number(rec.get("payload_started_at_ms"))
+            if prev_key and prev_key != turn_key and prev_payload is not None and abs(prev_payload - float(started_at)) < 1:
+                anchor = float(now_ms)
+            rec = {
+                "phase": "running",
+                "turn_key": turn_key,
+                "anchor_ms": anchor,
+                "payload_started_at_ms": float(started_at),
+                "took_ms": None,
+                "updated_ms": now_ms,
+            }
+            sessions[session_id] = rec
+            dirty = True
+        elapsed = max(0.0, (float(now_ms) - anchor) / 1000.0)
+        return f"running:{fmt_duration(elapsed)}", dirty
+
+    if rec.get("phase") == "running":
+        anchor = token_number(rec.get("anchor_ms"))
+        took_ms = max(0.0, float(now_ms) - float(anchor)) if anchor is not None else None
+        sessions[session_id] = {
+            "phase": "idle",
+            "turn_key": rec.get("turn_key") or "",
+            "anchor_ms": None,
+            "payload_started_at_ms": rec.get("payload_started_at_ms"),
+            "took_ms": took_ms,
+            "updated_ms": now_ms,
+        }
+        if took_ms is None:
+            return "", True
+        return f"took:{fmt_duration(took_ms / 1000.0)}", True
+
+    took_ms = token_number(rec.get("took_ms"))
+    if took_ms is not None and took_ms >= 0 and rec.get("phase") == "idle":
+        return f"took:{fmt_duration(took_ms / 1000.0)}", False
+    return "", False
+
+
+def duration_info(data, now_ms=None):
+    if now_ms is None:
+        now_ms = time.time() * 1000.0
+    box = {"text": ""}
+
+    def mutate(state):
+        text_value, dirty = _duration_from_state(state, data, now_ms)
+        box["text"] = text_value
+        return dirty
+
+    if not mutate_turn_cache(mutate):
+        text_value, _dirty = _duration_from_state({"sessions": {}}, data, now_ms)
+        return text_value
+    return box["text"]
 
 
 def cost_info(data):
